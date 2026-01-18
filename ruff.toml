@@ -1,0 +1,53 @@
+target-version = "py314"
+line-length = 160
+
+[lint]
+preview = true
+select = [
+    "E",     # pycodestyle errors (включая E3 после включения preview)
+    "F",     # pyflakes
+    "I",     # isort
+    "ANN",   # АННОТАЦИИ ТИПОВ
+    "W",     # Warnings (отступы, пробелы)
+]
+
+extend-select = [
+    "B",     # bugbear
+    "C4",    # comprehensions
+    "SIM",   # simplifications
+    "TCH",   # type-checking imports
+    "ARG",   # unused arguments
+    "PTH",   # pathlib
+    "PD",   # pandas
+    "RUF",   # ruff-native rules
+]
+
+ignore = [
+    "B008",     # function calls in defaults
+    "TC002",    # type-checking imports
+    "TC003",    # type-checking imports
+    "ERA",      # commented-out code (если используется плагин flake8-erase)
+    "RUF001",   # ambiguous unicode (strings)
+    "RUF002",   # ambiguous unicode (docstrings)
+    "RUF003",   # ambiguous unicode (comments)
+    "PD011",    # iterrows
+    "PD012",    # apply(axis=1)
+]
+
+[lint.per-file-ignores]
+"tests/*" = ["ARG"]
+"*/migrations/*" = ["ALL"]
+
+# Правильная секция для настроек сортировки импортов в ruff.toml
+[lint.isort]
+combine-as-imports = true
+known-first-party = ["src"] # Укажите здесь вашу корневую папку с кодом
+split-on-trailing-comma = true
+
+[lint.pylint]
+max-args = 7
+max-branches = 15
+
+[format]
+quote-style = "double"
+skip-magic-trailing-comma = false
