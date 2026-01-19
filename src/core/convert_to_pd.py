@@ -1,6 +1,6 @@
 import json
 import pathlib
-from typing import Any
+from typing import Any, Dict
 
 import pandas as pd
 
@@ -25,42 +25,63 @@ def convert_to_pd(filename: str) -> None:
 
 
 def restore_texts_for_llm(input_csv: str, output_jsonl: str) -> pd.DataFrame:
+    """
+    Reassembles chunked texts into full documents grouped by source URL
+    and exports them as JSONL suitable for LLM ingestion.
+    """
     df = pd.read_csv(input_csv)
 
-    df['content'] = df['content'].fillna('').astype(str)
-    df['content'] = df['content'].replace(r'[\n\r\t]+', ' ', regex=True).str.strip()
-
-    # 3. Парсинг метаданных (если они записаны как строка)
-    def parse_metadata(x: str) -> dict:
-        if isinstance(x, str):
+    def parse_metadata(value: Any) -> Dict[str, Any]:  # noqa: ANN401
+        if isinstance(value, dict):
+            return value
+        if isinstance(value, str) and value.strip():
             try:
-                # Заменяем одинарные кавычки на двойные для корректного JSON
-                return json.loads(x.replace("'", '"'))
-            except:  # noqa: E722
+                return json.loads(value)
+            except json.JSONDecodeError:
                 return {}
-        return x
+        return {}
 
-    df['metadata'] = df['metadata'].apply(parse_metadata)
+    df["metadata"] = df["metadata"].apply(parse_metadata)
 
-    def reassemble_chunks(group: pd.DataFrame) -> Any:  # noqa: ANN401
-        # Сортируем части статьи по их порядку в метаданных
-        sorted_group = group.sort_values(by='id')  # Или по метаданным, если id одинаковый
-        full_text = " ".join(sorted_group['content'].tolist())
+    df["url"] = df["metadata"].apply(lambda m: m.get("url", ""))
 
-        # Берем метаданные от первой части
-        meta = sorted_group['metadata'].iloc[0]
+    df["content"] = (
+        df["content"]
+        .fillna("")
+        .astype(str)
+        .replace(r"[\n\r\t]+", " ", regex=True)
+        .str.strip()
+    )
 
-        return pd.Series({
-            'text': full_text,
-            'source_url': meta.get('url', ''),
-            'date': sorted_group['created_at'].iloc[0]
-        })
+    sort_cols = ["url"]
+    if "id" in df.columns:
+        sort_cols.append("id")
 
-    # Если id уникален для статьи, а не для чанка — используем его
-    restored_df = df.groupby('id').apply(reassemble_chunks).reset_index()
+    df = df.sort_values(sort_cols)
 
-    # 5. Сохранение в JSONL (лучший формат для LLM - по одной записи на строку)
-    restored_df.to_json(output_jsonl, orient='records', lines=True, force_ascii=False)
+    def reassemble(group: pd.DataFrame) -> pd.Series:
+        return pd.Series(
+            {
+                "text": " ".join(group["content"].tolist()),
+                "source_url": group["url"].iloc[0],
+                "date": group["created_at"].iloc[0]
+                if "created_at" in group.columns
+                else None,
+            }
+        )
+
+    restored_df = (
+        df.groupby("url", as_index=False)
+        .apply(reassemble)
+        .reset_index(drop=True)
+    )
+
+    restored_df.to_json(
+        output_jsonl,
+        orient="records",
+        lines=True,
+        force_ascii=False,
+    )
 
     print(f"✅ Восстановлено статей: {len(restored_df)}")
     return restored_df
