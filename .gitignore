@@ -222,3 +222,4 @@ _Reports/
 src/novaya_rows_api.csv
 
 src/*.csv
+src/*.jsonl

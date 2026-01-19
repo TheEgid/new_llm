@@ -1,6 +1,8 @@
 import logging
 import sys
 
+import pandas as pd
+
 
 def setup_logger(name: str = "app_logger") -> logging.Logger:
     """Настраивает глобальный логгер для приложения."""
@@ -39,3 +41,30 @@ def setup_logger(name: str = "app_logger") -> logging.Logger:
 
 # Создаем экземпляр логгера
 logger = setup_logger()
+
+
+def log_wide_df_head(df: pd.DataFrame, n: int = 5) -> None:
+    if df.empty:
+        logger.info("DataFrame пуст.")
+        return
+
+    if n >= 0:
+        subset = df.head(n)
+        label = f"первые {n}"
+    else:
+        subset = df.tail(abs(n))
+        label = f"последние {abs(n)}"
+
+    logger.info(f"--- Предпросмотр широких данных ({label} строк) ---")
+
+    max_col_len = max(len(str(col)) for col in df.columns)
+    output = []
+    for i, row in enumerate(subset.to_dict(orient='records')):
+        real_idx = subset.index[i]
+
+        output.append(f"\n=== Запись (индекс {real_idx}) ===")
+        for col, val in row.items():
+            clean_val = str(val).replace('\n', ' ')
+            output.append(f"{str(col).ljust(max_col_len)} : {clean_val}")
+        output.append("-" * (max_col_len + 20))
+    logger.info("\n".join(output))
