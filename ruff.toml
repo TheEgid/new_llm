@@ -32,6 +32,7 @@ ignore = [
     "RUF003",   # ambiguous unicode (comments)
     "PD011",    # iterrows
     "PD012",    # apply(axis=1)
+    "ANN401",   # dynamically typed expressions
 ]
 
 [lint.per-file-ignores]

@@ -9,7 +9,7 @@ import supabase
 from core.logger import logger
 
 
-def _serialize_value(value: Any) -> Any:  # noqa: ANN401
+def _serialize_value(value: Any) -> Any:
     if isinstance(value, (dict, list)):
         return json.dumps(value, ensure_ascii=False)
     return value
@@ -30,7 +30,7 @@ def backup_table_via_api(
         count_response = (
             supabase_client
             .table(table_name)
-            .select("*", count="exact")
+            .select("*", count="exact")  # type: ignore
             .execute()
         )
         total_rows = count_response.count or 0
@@ -65,7 +65,7 @@ def backup_table_via_api(
             if not page_data:
                 break
 
-            all_data.extend(page_data)
+            all_data.extend(page_data)  # type: ignore
             offset += page_size
 
             if len(page_data) < page_size:

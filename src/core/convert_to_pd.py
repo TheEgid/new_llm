@@ -55,7 +55,7 @@ def restore_texts_for_llm(input_csv: str, output_jsonl: str) -> pd.DataFrame:
     if df.empty:
         return df
 
-    def parse_metadata(value: Any) -> Dict[str, Any]:  # noqa: ANN401
+    def parse_metadata(value: Any) -> Dict[str, Any]:
         if isinstance(value, dict):
             return value
         if isinstance(value, str) and value.strip():
@@ -98,7 +98,7 @@ def restore_texts_for_llm(input_csv: str, output_jsonl: str) -> pd.DataFrame:
     df = df[df["url"].astype(bool)]
     restored_df = (
         df.groupby("url", dropna=True)
-        .apply(reassemble, include_groups=False)
+        .apply(reassemble, include_groups=False)  # type: ignore
         .reset_index(drop=True)
     )
 
